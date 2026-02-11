@@ -1,67 +1,73 @@
 import { Hono } from "hono";
-import { zValidator } from "@hono/zod-validator";
-import { eq } from "drizzle-orm";
 import { db, workItems } from "@workspace/db";
-import { createWorkItemSchema, updateWorkItemSchema } from "@workspace/types";
+import { sql } from "drizzle-orm";
 
 const app = new Hono();
 
-app.get("/", async (c) => {
-  const items = await db.query.workItems.findMany({
-    orderBy: (items, { desc }) => [desc(items.createdAt)],
-  });
-  return c.json(items);
-});
+app.get("/metrics", async (c) => {
+  const now = new Date();
 
-app.post("/", zValidator("json", createWorkItemSchema), async (c) => {
-  const data = c.req.valid("json");
-  const [item] = await db
-    .insert(workItems)
-    .values({
-      ...data,
-      startAt: new Date(data.startAt),
-      endAt: new Date(data.endAt),
+  const [totalResult] = await db
+    .select({
+      count: sql`count(*)::int`.mapWith(Number),
     })
-    .returning();
-  return c.json(item, 201);
+    .from(workItems);
+
+  const [activeResult] = await db
+    .select({
+      count: sql`count(*)::int`.mapWith(Number),
+    })
+    .from(workItems)
+    .where(sql`${workItems.status} IN ('todo', 'in_progress', 'review')`);
+
+  const [completedResult] = await db
+    .select({
+      count: sql`count(*)::int`.mapWith(Number),
+    })
+    .from(workItems)
+    .where(sql`${workItems.status} = 'done'`);
+
+  const [overdueResult] = await db
+    .select({
+      count: sql`count(*)::int`.mapWith(Number),
+    })
+    .from(workItems)
+    .where(
+      sql`${workItems.endAt} < ${now}
+          AND ${workItems.status} NOT IN ('done', 'archive')`,
+    );
+
+  return c.json({
+    totalTasks: totalResult?.count ?? 0,
+    activeTasks: activeResult?.count ?? 0,
+    completedTasks: completedResult?.count ?? 0,
+    overdueTasks: overdueResult?.count ?? 0,
+  });
 });
 
-app.patch("/:id", zValidator("json", updateWorkItemSchema), async (c) => {
-  const id = c.req.param("id");
-  const data = c.req.valid("json");
+app.get("/by-status", async (c) => {
+  const results = await db
+    .select({
+      status: workItems.status,
+      count: sql`count(*)::int`.mapWith(Number),
+    })
+    .from(workItems)
+    .groupBy(workItems.status);
 
-  const updateData: Partial<typeof workItems.$inferInsert> = {};
-  if (data.title !== undefined) updateData.title = data.title;
-  if (data.description !== undefined) updateData.description = data.description;
-  if (data.status !== undefined) updateData.status = data.status;
-  if (data.startAt !== undefined) updateData.startAt = new Date(data.startAt);
-  if (data.endAt !== undefined) updateData.endAt = new Date(data.endAt);
-
-  const [item] = await db
-    .update(workItems)
-    .set(updateData)
-    .where(eq(workItems.id, id))
-    .returning();
-
-  if (!item) {
-    return c.json({ error: "Work item not found" }, 404);
-  }
-
-  return c.json(item);
+  return c.json(results);
 });
 
-app.delete("/:id", async (c) => {
-  const id = c.req.param("id");
-  const [item] = await db
-    .delete(workItems)
-    .where(eq(workItems.id, id))
-    .returning();
+app.get("/over-time", async (c) => {
+  const results = await db
+    .select({
+      date: sql`DATE(${workItems.createdAt})`.mapWith(String),
+      count: sql`count(*)::int`.mapWith(Number),
+    })
+    .from(workItems)
+    .groupBy(sql`DATE(${workItems.createdAt})`)
+    .orderBy(sql`DATE(${workItems.createdAt})`);
 
-  if (!item) {
-    return c.json({ error: "Work item not found" }, 404);
-  }
-
-  return c.json({ success: true });
+  return c.json(results);
 });
 
 export { app as workItemsRouter };

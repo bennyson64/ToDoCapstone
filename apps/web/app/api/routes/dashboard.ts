@@ -8,24 +8,35 @@ app.get("/metrics", async (c) => {
   const now = new Date();
 
   const [totalResult] = await db
-    .select({ count: sql<number>`count(*)::int` })
+    .select({
+      count: sql`count(*)::int`.mapWith(Number),
+    })
     .from(workItems);
 
   const [activeResult] = await db
-    .select({ count: sql<number>`count(*)::int` })
+    .select({
+      count: sql`count(*)::int`.mapWith(Number),
+    })
     .from(workItems)
-    .where(sql`${workItems.status} IN ('todo', 'in_progress', 'review')`);
+    .where(
+      sql`${workItems.status} IN ('todo', 'in_progress', 'review')`
+    );
 
   const [completedResult] = await db
-    .select({ count: sql<number>`count(*)::int` })
+    .select({
+      count: sql`count(*)::int`.mapWith(Number),
+    })
     .from(workItems)
     .where(sql`${workItems.status} = 'done'`);
 
   const [overdueResult] = await db
-    .select({ count: sql<number>`count(*)::int` })
+    .select({
+      count: sql`count(*)::int`.mapWith(Number),
+    })
     .from(workItems)
     .where(
-      sql`${workItems.endAt} < ${now.toISOString()} AND ${workItems.status} != 'done' AND ${workItems.status} != 'archive'`,
+      sql`${workItems.endAt} < ${now}
+          AND ${workItems.status} NOT IN ('done', 'archive')`
     );
 
   return c.json({
@@ -40,7 +51,7 @@ app.get("/by-status", async (c) => {
   const results = await db
     .select({
       status: workItems.status,
-      count: sql<number>`count(*)::int`,
+      count: sql`count(*)::int`.mapWith(Number),
     })
     .from(workItems)
     .groupBy(workItems.status);
@@ -51,8 +62,8 @@ app.get("/by-status", async (c) => {
 app.get("/over-time", async (c) => {
   const results = await db
     .select({
-      date: sql<string>`DATE(${workItems.createdAt})::text`,
-      count: sql<number>`count(*)::int`,
+      date: sql`DATE(${workItems.createdAt})`.mapWith(String),
+      count: sql`count(*)::int`.mapWith(Number),
     })
     .from(workItems)
     .groupBy(sql`DATE(${workItems.createdAt})`)

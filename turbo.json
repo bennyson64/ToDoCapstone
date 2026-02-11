@@ -4,8 +4,9 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "inputs": ["$TURBO_DEFAULT$"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"],
+      "env": ["DATABASE_URL"],
       "cache": true
     },
     "lint": {
@@ -26,5 +27,5 @@
       "persistent": true
     }
   },
-  "globalDependencies": ["**/.env.*local"]
+  
 }
