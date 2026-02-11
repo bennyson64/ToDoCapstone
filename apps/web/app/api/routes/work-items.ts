@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { eq } from "drizzle-orm";
-import { db, workItems } from "@workspace/db"; 
+import { db, workItems } from "@workspace/db";
 import { createWorkItemSchema, updateWorkItemSchema } from "@workspace/types";
 
 const app = new Hono();
