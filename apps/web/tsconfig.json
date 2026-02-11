@@ -14,11 +14,11 @@
   },
   "include": [
     "next-env.d.ts",
-    "next.config.ts",
+    "next.config.mjs",
     "**/*.ts",
     "**/*.tsx",
-    ".next/types/**/*.ts",
-    "../api/src/routes/work-items.ts"
+    ".next/types/**/*.ts"
+    
   ],
   "exclude": ["node_modules"]
 }
