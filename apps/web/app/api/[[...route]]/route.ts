@@ -3,8 +3,8 @@ import { handle } from "hono/vercel";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 
-import { workItemsRouter } from "../routes/work-items";
-import { dashboardRouter } from "../routes/dashboard";
+import { workItemsRouter } from "../work-items/route";
+import { dashboardRouter } from "../dashboard/route";
 
 const app = new Hono().basePath("/api");
 
