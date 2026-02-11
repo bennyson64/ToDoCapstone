@@ -1,0 +1,28 @@
+{
+  "installCommand": "pnpm install",
+  "buildCommand": "pnpm run build",
+  "framework": "nextjs",
+  "outputDirectory": "apps/web/.next",
+  "builds": [
+    {
+      "src": "apps/web/package.json",
+      "use": "@vercel/next"
+    },
+    {
+      "src": "apps/api/src/index.ts",
+      "use": "@vercel/node"
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/apps/api/src/index.ts"
+    }
+  ],
+  "functions": {
+    "apps/api/src/index.ts": {
+      "runtime": "nodejs18.x",
+      "includeFiles": ["packages/**", "apps/api/dist/**"]
+    }
+  }
+}
