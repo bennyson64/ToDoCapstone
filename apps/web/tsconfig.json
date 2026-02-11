@@ -17,7 +17,8 @@
     "next.config.ts",
     "**/*.ts",
     "**/*.tsx",
-    ".next/types/**/*.ts"
+    ".next/types/**/*.ts",
+    "../api/src/routes/work-items.ts"
   ],
   "exclude": ["node_modules"]
 }
